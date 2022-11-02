@@ -3,7 +3,6 @@ import { Canvas, extend, useThree } from "@react-three/fiber";
 import { useDrag } from "@use-gesture/react";
 import { animated } from "@react-spring/three";
 import * as THREE from "three";
-import "./App.css";
 
 // This example
 // https://maxrohde.com/2019/10/19/creating-a-draggable-shape-with-react-three-fiber
@@ -18,19 +17,21 @@ type SphereProps = {
 };
 
 const DrawingArea = () => {
-	const object = useRef();
-	const { camera, gl } = useThree();
+	const [position, setPosition] = useState<[number, number, number]>([0, 0, 0]);
+	const { size, viewport } = useThree();
+	const aspect = size.width / viewport.width;
 
-	const bind = useDrag(({ timeStamp }) => {
-		return timeStamp;
+	const bind = useDrag(({ offset: [x, y] }) => {
+		const [, , z] = position;
+		setPosition([x / aspect, -y / aspect, z]);
 	});
 
 	return (
 		<>
-			<animated.mesh {...bind} onPointerDown={(e) => {}} position={[0, 0, 0]}>
+			<mesh {...bind()} position={position}>
 				<meshNormalMaterial />
-				<boxGeometry args={[2, 2, 2]} />
-			</animated.mesh>
+				<boxGeometry args={[1, 1, 0.5]} />
+			</mesh>
 		</>
 	);
 };
@@ -39,6 +40,7 @@ function App() {
 	return (
 		<Canvas>
 			<DrawingArea />
+			<orthographicCamera />
 		</Canvas>
 	);
 }
