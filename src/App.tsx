@@ -1,15 +1,19 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useCallback } from "react";
 import {
 	Canvas,
 	extend,
 	ThreeElements,
 	useFrame,
 	useThree,
+	ThreeEvent,
 } from "@react-three/fiber";
-import { useDrag } from "@use-gesture/react";
+// import { useDrag } from "@use-gesture/react";
 import { animated } from "@react-spring/three";
 import * as THREE from "three";
-import { PerspectiveCamera } from "@react-three/drei";
+import { OrthographicCamera, PerspectiveCamera } from "@react-three/drei";
+import { Vector3 } from "three";
+import { useDrag } from "./use-drag";
+import { Scene } from "./orthographic-scene";
 
 // This example
 // https://maxrohde.com/2019/10/19/creating-a-draggable-shape-with-react-three-fiber
@@ -28,9 +32,10 @@ type DrawingAreaProps = {
 };
 
 const DrawingArea = ({ zoomExponent }: DrawingAreaProps) => {
-	const [position, setPosition] = useState<[number, number, number]>([0, 0, 0]);
-	const { size, viewport } = useThree();
-	const aspect = size.width / viewport.width;
+	// const [position, setPosition] = useState<[number, number, number]>([0, 0, 0]);
+	const positionRef = useRef<[number, number, number]>([0, 0, 0]);
+	// const { size, viewport } = useThree();
+	// const aspect = size.width / viewport.width;
 	const boxMesh = useRef<
 		THREE.Mesh<THREE.BufferGeometry, THREE.Material | THREE.Material[]>
 	>(null) satisfies React.Ref<THREE.Mesh<
@@ -41,29 +46,29 @@ const DrawingArea = ({ zoomExponent }: DrawingAreaProps) => {
 		null
 	) satisfies React.Ref<THREE.PerspectiveCamera>;
 
-	const bind = useDrag(({ offset: [x, y] }) => {
-		const [, , z] = position;
-		setPosition([x / aspect, -y / aspect, z]);
+	const bind = useDrag((point) => {
+		// positionRef.current = [point.x, point.y, positionRef.current[2]];
+		if (boxMesh.current) {
+			boxMesh.current.position.x = point.x;
+			boxMesh.current.position.y = point.y;
+			boxMesh.current.position.z = point.y;
+		}
 	});
 
-	useFrame(({ clock }) => {
+	useFrame(({ clock, camera }) => {
 		if (boxMesh.current) {
 			boxMesh.current.rotation.y = clock.getElapsedTime();
 		}
 
-		if (ourCamera.current) {
-			console.log("Setting our camera");
-			ourCamera.current.fov = Math.E ** zoomExponent;
-		}
+		camera.zoom = Math.E ** zoomExponent;
 	});
 
 	return (
 		<>
-			<PerspectiveCamera ref={ourCamera} position={[10, 0, 0]} />
 			<mesh
 				ref={boxMesh}
 				{...(bind() as any)}
-				position={position}
+				position={positionRef.current}
 				rotation={[0, 0, 0]}
 			>
 				<meshNormalMaterial />
@@ -73,20 +78,25 @@ const DrawingArea = ({ zoomExponent }: DrawingAreaProps) => {
 	);
 };
 
-function App() {
-	const [zoomExponent, setZoomExponent] = useState(0);
+// function App() {
+// 	const [zoomExponent, setZoomExponent] = useState(0);
 
-	return (
-		<Canvas
-			onWheel={(event) => {
-				const newZoomExponent = zoomExponent + event.deltaY;
-				console.log(newZoomExponent);
-				setZoomExponent(newZoomExponent);
-			}}
-		>
-			<DrawingArea zoomExponent={zoomExponent} />
-		</Canvas>
-	);
+// 	return (
+// 		<Canvas
+// 			onWheel={(event) => {
+// 				const newZoomExponent = zoomExponent + event.deltaY * 0.0001;
+// 				setZoomExponent(newZoomExponent);
+// 			}}
+// 		>
+// 			<DrawingArea zoomExponent={zoomExponent} />
+// 			<gridHelper args={[10, 10, `black`, `gray`]} />
+// 			{/* <OrthographicCamera makeDefault zoom={1} position={[0, 10, 10]} /> */}
+// 		</Canvas>
+// 	);
+// }
+
+function App() {
+	return <Scene />;
 }
 
 export default App;
